@@ -23,7 +23,7 @@ void PowerSensor::setOffset() {
 /*  *******************************************************************************************
  *                                   Current Measurement
  *  *******************************************************************************************/
-float PowerSensor::measureAC(float Vcc)  {
+float PowerSensor::measureAC()  {
 
   uint16_t readValue;
   uint16_t maxValue = 0;
@@ -44,14 +44,15 @@ float PowerSensor::measureAC(float Vcc)  {
   if (maxMinValue <= 15) {
     maxMinValue = 0;
   }
-    
-  return (maxMinValue * Vcc * 0.3535) / (mVperAmp * 1024.0);
+  float current = (maxMinValue * readVcc() * 0.3535) / (mVperAmp * 1024.0);
+  overload = (current > maxCurrent);    
+  return current;
 }
 
 /*  *******************************************************************************************
  *                                   Current Measurement
  *  *******************************************************************************************/
-float PowerSensor::measureDC(float Vcc)  {
+float PowerSensor::measureDC()  {
 
   uint16_t n = 0;
   uint32_t averageSum = 0;
@@ -62,7 +63,7 @@ float PowerSensor::measureDC(float Vcc)  {
   }
 
   float result = averageSum / n;
-  return (result * Vcc) / (mVperAmp * 1024.0);
+  return (result * readVcc()) / (mVperAmp * 1024.0);
 
 }
 
@@ -76,6 +77,20 @@ float PowerSensor::calculatePower(float current, float cosfi)  {
 /*  *******************************************************************************************
  *                                  Electrical Status Check
  *  *******************************************************************************************/
-bool PowerSensor::electricalStatus(float current) {
-  return (current > maxCurrent);
+bool PowerSensor::isOverload() {
+  return overload;
+}
+
+/*  *******************************************************************************************
+ *                                    Read Vcc
+ *  *******************************************************************************************/
+long PowerSensor::readVcc() {
+  
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(2);
+  ADCSRA |= _BV(ADSC); 
+  
+  while (bit_is_set(ADCSRA,ADSC));
+  
+  return  1126400L / (long)(ADCL | ADCH<<8 );
 }

@@ -14,14 +14,16 @@ InternalTemperature::InternalTemperature(uint8_t sensorPin, uint8_t maxTemperatu
 float InternalTemperature::measureT()  {
   int readValue = analogRead(sensorPin);
   float vcc = readVcc();
-  return ((readValue * vcc) / 1024.0 - zeroVoltage) / mVperC;
-}
+  float temperature = ((readValue * vcc) / 1024.0 - zeroVoltage) / mVperC; 
+  overheat = (temperature > maxTemperature);
+  return temperature;
+ }
 
 /*  *******************************************************************************************
  *                                  Thermal Status Check
  *  *******************************************************************************************/
-bool InternalTemperature::thermalStatus(float temperature)  {
-  return (temperature > maxTemperature);
+bool InternalTemperature::isOverheat()  {
+  return overheat;
 }
 
 /*  *******************************************************************************************

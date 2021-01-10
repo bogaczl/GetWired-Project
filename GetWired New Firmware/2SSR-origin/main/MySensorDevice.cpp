@@ -1,32 +1,52 @@
 #include "Arduino.h"
 #include <core/MySensorsCore.h>
-#include "Relay.h"
-#include "Button.h"
+#include "Device.h"
 #include "PowerSensor.h"
 #include "InternalTemperature.h"
 #include "ExternalTemperature.h"
 #include "MySensorDevice.h"
 
 /*  *******************************************************************************************
- *                                    MySensor device decorator
+ *                                    MySensor general device
  *  *******************************************************************************************/
 int MySensorDevice::usedIDs = 0;
-MySensorDevice::MySensorDevice(const mysensors_sensor_t sensorType, const char *description,int size):sensorId(usedIDs),sensorType(sensorType),description(description) {
+MySensorDevice::MySensorDevice(const mysensors_sensor_t sensorType, const char *description, int size):sensorId(usedIDs),sensorType(sensorType),description(description) {
   usedIDs += size;
 }
 
 void MySensorDevice::presentDevice() {  
-  present(sensorId, sensorType, description);   
+  present(sensorId, sensorType, description);
+  wait(PRESENTATION_DELAY);   
 }
 
-void MySensorDevice::processMessage(const MyMessage &) { }
+/*  *******************************************************************************************
+ *                                    MySensor relay
+ *  *******************************************************************************************/
+MySensorSimpleInput::MySensorSimpleInput(const char *description, Input * input):MySensorDevice(S_BINARY, description),input(input) {
+  msg = new MyMessage(sensorId, V_STATUS);
+}
+
+void MySensorSimpleInput::initDevice() {
+  previousState = input->getState();
+  send(msg->setSensor(sensorId).set(previousState));
+  request(sensorId, V_STATUS);
+  wait(2000, C_SET, V_STATUS);
+}
+
+void MySensorSimpleInput::updateDevice() {
+  int state = input->getState();
+  if (previousState != state) {
+    send(msg->setSensor(sensorId).set(state));
+    previousState = state;
+  }
+}
+
 
 /*  *******************************************************************************************
  *                                    MySensor button
  *  *******************************************************************************************/
 MySensorButton::MySensorButton(const char *description, Button * button):MySensorDevice(S_BINARY, description, 2),button(button) { 
-    previousLongState = 0;
-    msgShort = new MyMessage(sensorId, V_LIGHT);
+    msgShort = new MyMessage(sensorId,V_LIGHT);
     msgLong = new MyMessage(sensorId+1,V_LIGHT);
 }
 
@@ -34,25 +54,29 @@ void MySensorButton::presentDevice() {
   char con[40];
   sprintf(con,"%s %s",description, "short");  
   present(sensorId, S_BINARY, con);
+  wait(PRESENTATION_DELAY);
   sprintf(con,"%s %s",description, "long");  
-  present(sensorId+1, S_BINARY, con);   
+  present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);   
 }
 
 void MySensorButton::initDevice() {
-  send(msgShort->set(button->getShortState()));
-  send(msgLong->set(button->getLongState()));
+  send(msgShort->setSensor(sensorId).set(button->getShortState()));
+  previousLongState = button->getLongState();
+  send(msgLong->setSensor(sensorId+1).set(previousLongState));
 }
 
 void MySensorButton::updateDevice() {
+  button->checkInput();
   uint8_t state = button->getShortState();
   if (state) {
-    send(msgShort->set("1"));
+    send(msgShort->setSensor(sensorId).set("1"));
     delay(100);
-    send(msgShort->set("0"));
+    send(msgShort->setSensor(sensorId).set("0"));
   }
   state = button->getLongState();
   if (previousLongState != state) {
-    send(msgLong->set(state));
+    send(msgLong->setSensor(sensorId+1).set(state));
     previousLongState = state;
   }
 }
@@ -64,21 +88,18 @@ MySensorRelay::MySensorRelay(const char *description, Relay * relay):MySensorDev
   msg = new MyMessage(sensorId, V_LIGHT);
 }
 
-void MySensorRelay::presentDevice() {
-  present(sensorId, S_BINARY, description);
-}
-
 void MySensorRelay::initDevice() {
   previousState = relay->getState();
-  send(msg->set(previousState));
+  send(msg->setSensor(sensorId).set(previousState));
   request(sensorId, V_STATUS);
   wait(2000, C_SET, V_STATUS);
 }
 
 void MySensorRelay::updateDevice() {
-  if (previousState != relay->getState()) {
-    send(msg->set(relay->getState()));
-    previousState = relay->getState();
+  int state = relay->getState();
+  if (previousState != state) {
+    send(msg->setSensor(sensorId).set(state));
+    previousState = state;
   }
 }
 
@@ -104,16 +125,17 @@ void MySensorRelayButton::initDevice() {
 }
 
 void MySensorRelayButton::updateDevice() {
+  button->checkInput();
   uint8_t state = button->getShortState();
   if (state) {
     relay->switchState();
-    send(msgShort->set("1"));
+    send(msgShort->setSensor(sensorId).set("1"));
     delay(100);
-    send(msgShort->set("0"));
+    send(msgShort->setSensor(sensorId).set("0"));
   }
   state = button->getLongState();
   if (previousLongState != state) {
-    send(msgLong->set(state));
+    send(msgLong->setSensor(sensorId+1).set(state));
     previousLongState = state;
   }
 }
@@ -122,40 +144,104 @@ void MySensorRelayButton::updateDevice() {
 /*  *******************************************************************************************
  *                                    MySensor power sensor
  *  *******************************************************************************************/
-MySensorPowerSensor::MySensorPowerSensor(const char *description, PowerSensor * sensor, Relay * relay1, Relay * relay2): MySensorDevice(S_POWER, description),powerSensor(sensor),relay1(relay1),relay2(relay2) {
+MySensorPowerSensor::MySensorPowerSensor(const char *description, PowerSensor * sensor, Relay * relay1, Relay * relay2): MySensorDevice(S_POWER, description, 2),powerSensor(sensor),relay1(relay1),relay2(relay2) {
   msg = new MyMessage(sensorId, V_WATT);
+  fuse = new MyMessage(sensorId+1, V_STATUS);
+}
+
+void MySensorPowerSensor::presentDevice() {
+  MySensorDevice::presentDevice();
+  char con[40];
+  sprintf(con,"%s %s",description, "overload");  
+  present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);   
 }
 
 void MySensorPowerSensor::initDevice() {
-  send(msg->set("0"));
+  previousValue = 0.0;
+  send(msg->setSensor(sensorId).set("0.0"));
+  send(fuse->setSensor(sensorId+1).set("1"));
 }
 
 void MySensorPowerSensor::updateDevice() {
-  
+  float current = 0.0;
+  if (relay1->getState() == RELAY_ON || relay2->getState() == RELAY_ON)  {
+    current = powerSensor->measureAC();
+  }
+  if ((fabs(previousValue-current) > 0.05) || (fabs(previousValue - current) > (0.1 * previousValue)) ) {
+    send(msg->set(powerSensor->calculatePower(current, COSFI), 0));
+    previousValue = current;
+  }
+  if (powerSensor->isOverload()) {
+    fuseBroken = true;
+    relay1->setState(0);
+    relay2->setState(0); 
+    send(fuse->set("0"));
+  }
+  else if (fuseBroken) {
+    fuseBroken = false;
+    send(fuse->set("1"));  
+  }
 }
 
+void MySensorPowerSensor::processMessage(const MyMessage &message) {
+  if (message.sensor != sensorId+1) return;
+  if (message.type == V_STATUS) {
+    if (message.getBool()) {
+      fuseBroken = false;
+    }
+  }
+}
 
 /*  *******************************************************************************************
  *                                    MySensor internal temperature
  *  *******************************************************************************************/
-MySensorInternalTemperature::MySensorInternalTemperature(const char *description, InternalTemperature * sensor, Relay * relay1, Relay * relay2): MySensorDevice(S_TEMP, description),sensor(sensor),relay1(relay1),relay2(relay2) {
+MySensorInternalTemperature::MySensorInternalTemperature(const char *description, InternalTemperature * sensor, Relay * relay1, Relay * relay2): MySensorDevice(S_TEMP, description, 2),sensor(sensor),relay1(relay1),relay2(relay2) {
   msg = new MyMessage(sensorId, V_TEMP);  
+  fuse = new MyMessage(sensorId+1, V_STATUS);
+}
+
+void MySensorInternalTemperature::presentDevice() {
+  MySensorDevice::presentDevice();
+  char con[40];
+  sprintf(con,"%s %s",description, "overheat");  
+  present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);   
 }
 
 void MySensorInternalTemperature::initDevice() {
   send(msg->set((int)sensor->measureT()));
+  send(fuse->setSensor(sensorId+1).set("1"));
   lastUpdate = millis();
 }
 
 void MySensorInternalTemperature::updateDevice() {
+  
   if (millis() > lastUpdate + INTERVAL)  {
     send(msg->set((int)sensor->measureT()));
     lastUpdate = millis();
-  }
-
   
+    if (sensor->isOverheat()) {
+      fuseBroken = true;
+      relay1->setState(0);
+      relay2->setState(0); 
+      send(fuse->set("0"));
+    }
+    else if (fuseBroken) {
+      fuseBroken = false;
+      send(fuse->set("1"));  
+    }
+  }
 }
 
+void MySensorInternalTemperature::processMessage(const MyMessage &message) {
+  if (message.sensor != sensorId+1) return;
+  if (message.type == V_STATUS) {
+    if (message.getBool()) {
+      fuseBroken = false;
+    }
+  }
+}
 
 /*  *******************************************************************************************
  *                                    MySensor internal temperature
@@ -166,6 +252,7 @@ MySensorExternalTemperature::MySensorExternalTemperature(const char *description
 
 void MySensorExternalTemperature::initDevice() {
   sensor->setup();
+  lastUpdate = millis();
 }
 
 void MySensorExternalTemperature::updateDevice() {

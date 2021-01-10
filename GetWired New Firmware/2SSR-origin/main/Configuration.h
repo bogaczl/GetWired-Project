@@ -5,11 +5,12 @@
                     MySensors Definitions
  *  *******************************************************************************************/
 // Identification
-#define MY_NODE_ID 2                            // Set node ID
-#define SN "GetWired-02-DR"                     // Set node name to present to a controller
+#define MY_NODE_ID 5                           // Set node ID
+#define SN "GetWired-5-DR"                     // Set node name to present to a controller
 #define SV "1.0"                                // Set sensor version
 
 // Selecting transmission settings
+#define MY_DEBUG
 #define MY_RS485                              // Enable RS485 transport layer
 #define MY_RS485_DE_PIN 7                     // DE Pin definition
 #define MY_RS485_BAUD_RATE 57600              // Set RS485 baud rate
@@ -21,7 +22,7 @@
 
 // Other
 #define MY_TRANSPORT_WAIT_READY_MS 60000        // Time to wait for gateway to respond at startup (default 60000)
-
+#define MAXDEVICESCOUNT 20
 
 // Output Config - one of these has to be defined
 #define DOUBLE_RELAY              // Define this node as a double relay node, setting below
@@ -81,7 +82,7 @@
 #define COSFI 1                             // cos(fi) value for a given load: resistive load - 1, LED - 0.4 < cos(fi) < 0.99, fluorescent - 
 
 // Other
-#define INTERVAL 300000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
+#define INTERVAL 30000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
 #define INIT_DELAY 200                      // A value to be multiplied by node ID value to obtain the time to wait during the initialization process
 #define PRESENTATION_DELAY 10               // Time (ms) to wait between subsequent presentation messages (default 10)
 #define LOOP_TIME 100                       // Main loop wait time (default 100)        

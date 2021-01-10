@@ -13,9 +13,19 @@ class MySensorDevice {
   public:
     MySensorDevice(const mysensors_sensor_t sensorType, const char *description="", int size=1);
     virtual void presentDevice();
+    virtual void initDevice() = 0;
+    virtual void updateDevice() = 0;
+    virtual void processMessage(const MyMessage &message){ };
+};
+
+class MySensorSimpleInput : public MySensorDevice { 
+    MyMessage * msg;
+    Input * input;
+    uint8_t previousState;
+  public:
+    MySensorSimpleInput(const char *description, Input * input);
     virtual void initDevice();
     virtual void updateDevice();
-    virtual void processMessage(const MyMessage &message);
 };
 
 class MySensorButton : public MySensorDevice {
@@ -37,7 +47,6 @@ class MySensorRelay : public MySensorDevice {
     MyMessage * msg;
   public:
     MySensorRelay(const char *description, Relay * relay);
-    virtual void presentDevice();
     virtual void initDevice();
     virtual void updateDevice();
     virtual void processMessage(const MyMessage &message);
@@ -56,23 +65,32 @@ class MySensorPowerSensor : public MySensorDevice {
     PowerSensor * powerSensor;
     Relay * relay1;
     Relay * relay2;
+    float previousValue;
+    bool fuseBroken = false;
     MyMessage * msg;
+    MyMessage * fuse;
   public:
     MySensorPowerSensor(const char *description, PowerSensor * sensor, Relay * relay1, Relay * relay2);
+    virtual void presentDevice();
     virtual void initDevice();
     virtual void updateDevice();
+    virtual void processMessage(const MyMessage &);
 };
 
 class MySensorInternalTemperature : public MySensorDevice {
     InternalTemperature * sensor;
     Relay * relay1;
     Relay * relay2;
+    bool fuseBroken = false;
     MyMessage * msg;
+    MyMessage * fuse;
     unsigned long lastUpdate;
   public:
     MySensorInternalTemperature(const char *description, InternalTemperature * sensor, Relay * relay1, Relay * relay2);
+    virtual void presentDevice();
     virtual void initDevice();
     virtual void updateDevice();
+    virtual void processMessage(const MyMessage &);
 };
 
 class MySensorExternalTemperature : public MySensorDevice {
