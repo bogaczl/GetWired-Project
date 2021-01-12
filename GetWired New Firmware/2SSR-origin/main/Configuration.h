@@ -7,7 +7,7 @@
 // Identification
 #define MY_NODE_ID 5                           // Set node ID
 #define SN "GetWired-5-DR"                     // Set node name to present to a controller
-#define SV "1.0"                                // Set sensor version
+#define SV "1.0"                               // Set sensor version
 
 // Selecting transmission settings
 #define MY_DEBUG
@@ -82,7 +82,7 @@
 #define COSFI 1                             // cos(fi) value for a given load: resistive load - 1, LED - 0.4 < cos(fi) < 0.99, fluorescent - 
 
 // Other
-#define INTERVAL 30000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
+#define INTERVAL 300000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
 #define INIT_DELAY 200                      // A value to be multiplied by node ID value to obtain the time to wait during the initialization process
 #define PRESENTATION_DELAY 10               // Time (ms) to wait between subsequent presentation messages (default 10)
 #define LOOP_TIME 100                       // Main loop wait time (default 100)        

@@ -7,7 +7,6 @@
 #include "PowerSensor.h"
 #include "InternalTemperature.h"
 #include "ExternalTemperature.h"
-#include "RShutterControl.h"
 #include "MySensorDevice.h"
 
 /*  *******************************************************************************************

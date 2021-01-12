@@ -244,7 +244,7 @@ void MySensorInternalTemperature::processMessage(const MyMessage &message) {
 }
 
 /*  *******************************************************************************************
- *                                    MySensor internal temperature
+ *                                    MySensor external temperature
  *  *******************************************************************************************/
 MySensorExternalTemperature::MySensorExternalTemperature(const char *description, ExternalTemperature * sensor): MySensorDevice(S_TEMP, description),sensor(sensor) {
   msg = new MyMessage(sensorId, V_TEMP);  
@@ -265,4 +265,65 @@ void MySensorExternalTemperature::updateDevice() {
       lastUpdate = millis();
     }
   }
+}
+
+
+/*  *******************************************************************************************
+ *                                    MySensor shutter controler
+ *  *******************************************************************************************/
+MySensorShutterControler::MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor):MySensorDevice(S_COVER, description),shutterControler(shutterControler),powerSensor(sensor) {
+  msgPercent = new MyMessage (sensorId, V_PERCENTAGE);
+}
+
+
+void MySensorShutterControler::initDevice() {
+    send(MyMessage(sensorId, V_UP).set(0));
+    request(sensorId, V_UP);
+    wait(2000, C_SET, V_UP);
+
+    send(MyMessage(sensorId, V_DOWN).set(0));
+    request(sensorId, V_DOWN);
+    wait(2000, C_SET, V_DOWN);
+
+    send(MyMessage(sensorId, V_STOP).set(0));
+    request(sensorId, V_STOP);
+    wait(2000, C_SET, V_STOP);
+
+    send(msgPercent->set(position));
+    request(sensorId, V_PERCENTAGE);
+    wait(2000, C_SET, V_PERCENTAGE); 
+}
+
+
+void MySensorShutterControler::processMessage(const MyMessage &message) {
+  if (message.sensor != sensorId) return;
+  if (message.type == V_PERCENTAGE) {
+    desiredPosition = atoi(message.data);
+    desiredPosition = desiredPosition > 100 ? 100 : desiredPosition;
+    desiredPosition = desiredPosition < 0 ? 0 : desiredPosition;
+  }
+  else if(message.type == V_DOWN) {
+  }
+  else if(message.type == V_UP) {
+  }
+  else if(message.type == V_STOP) {
+  }
+}
+
+void MySensorShutterControler::updateDevice() {
+  // Handling movement ordered by controller (new position percentage)
+  if (desiredPosition != position)  {
+    float movementRange = ((float)desiredPosition - (float)position) / 100;   // Downward => MR > 0; Upward MR < 0
+    int movementDirection = movementRange > 0 ? 1 : 0;                        // MovementDirection: 1 -> Down; 0 -> Up
+
+    //shutterControler->moveUp();
+    //wait(MovementTime);
+    shutterControler->stop();
+    position = desiredPosition;
+    //EEPROM.put(EEA_RS_POSITION, position);
+    send(msgPercent->set(position));
+    
+  }
+  // If no new position set by percentage, check buttons
+  else  { }
 }

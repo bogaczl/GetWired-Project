@@ -103,4 +103,22 @@ class MySensorExternalTemperature : public MySensorDevice {
     virtual void updateDevice();
 };
 
+class MySensorShutterControler : public MySensorDevice {
+    Button * upButton;
+    Button * downButton;
+    ShutterControler * shutterControler;
+    PowerSensor * powerSensor;
+    MyMessage * msgPercent;
+    bool calibrated;
+    uint8_t downTime;
+    uint8_t upTime;
+    uint8_t position;
+    uint8_t desiredPosition;
+  public:    
+    MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor);
+    virtual void initDevice();
+    virtual void processMessage(const MyMessage &);
+    virtual void updateDevice();
+};
+
 #endif

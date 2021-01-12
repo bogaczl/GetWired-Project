@@ -33,4 +33,18 @@ class Relay {
     void fuseSet(bool state);
 };
 
+class ShutterControler {
+    uint8_t upPin;
+    uint8_t downPin;
+    bool OnState;
+    bool OffState;
+  public:
+    ShutterControler(const uint8_t upPin, const uint8_t downPin);
+    void stop();
+    void moveUp();
+    void moveDown();
+};
+
+
+
 #endif
