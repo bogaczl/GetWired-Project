@@ -11,14 +11,18 @@ class Input {
 };
 
 class Button {
-    enum class State { IDLE, CLICKED, LONGPRESSED };
+    unsigned long previousClickTime;
+    unsigned long longPressTime;
+    enum class State { IDLE, CLICKED, DOUBLE_CLICKED, LONG_PRESSED };
     State state = State::IDLE;
     const uint8_t sensorPin; 
   public:
     Button(const uint8_t sensorPin);
     void checkInput();
-    uint8_t getShortState();
-    uint8_t getLongState();
+    bool getShortState();
+    bool getDoubleState();
+    bool getLongState();
+    unsigned long getLongPressTime();
 };
 
 class Relay {
@@ -41,8 +45,31 @@ class ShutterControler {
   public:
     ShutterControler(const uint8_t upPin, const uint8_t downPin);
     void stop();
-    void moveUp();
-    void moveDown();
+    void goUp();
+    void goDown();
+};
+
+class SmartShutterControler {
+  public:
+    enum class State { IDLE, GOING_UP, GOING_DOWN };
+  private:    
+    int upTime;
+    int downTime;
+    int position;
+    unsigned long startTime;
+    State state = State::IDLE;
+    const ShutterControler * shutterControler;
+    void updatePosition();
+  public:
+    SmartShutterControler(ShutterControler * shutterControler, int position=0, int upTime=0, int downTime=0);
+    void goUp();
+    void goDown();
+    void stop();
+    int getPosition();
+    void goPosition(int position);
+    void calibrate(int upTime, int downTime, int position);
+    bool isCalibrated();
+    State getState();
 };
 
 

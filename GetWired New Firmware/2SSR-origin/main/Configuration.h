@@ -6,8 +6,6 @@
  *  *******************************************************************************************/
 // Identification
 #define MY_NODE_ID 5                           // Set node ID
-#define SN "GetWired-5-DR"                     // Set node name to present to a controller
-#define SV "1.0"                               // Set sensor version
 
 // Selecting transmission settings
 #define MY_DEBUG
@@ -18,19 +16,15 @@
 #define MY_RS485_SOH_COUNT 3                  // Collision avoidance
 
 // FOTA Feature
-#define MY_OTA_FIRMWARE_FEATURE                 // Enable OTA feature
+//#define MY_OTA_FIRMWARE_FEATURE                 // Enable OTA feature
 
 // Other
 #define MY_TRANSPORT_WAIT_READY_MS 60000        // Time to wait for gateway to respond at startup (default 60000)
-#define MAXDEVICESCOUNT 20
+#define MAXDEVICESCOUNT 30
 
 // Output Config - one of these has to be defined
 #define DOUBLE_RELAY              // Define this node as a double relay node, setting below
 //#define ROLLER_SHUTTER            // Define this node as a roller shutter node, setting below
-//#define FOUR_RELAY                // Define this node as a four relay node, setting below
-//#define DIMMER                    // Define this node as a 1-channel dimmer node, setting below
-//#define RGB                       // Define this node as a RGB dimmer node, setting below
-//#define RGBW                      // Define this node as a RGBW dimmer node, setting below
 
 /*  *******************************************************************************************
                     MCU Pin Definitions
@@ -91,26 +85,12 @@
                     OUTPUT Config
  *  *******************************************************************************************/
 // 2SSR DOUBLE_RELAY
-#ifdef DOUBLE_RELAY
-  #define RELAY_ID_1 0
-  #define RELAY_ID_2 1
-  #define RELAY_1 OUTPUT_PIN_1
-  #define RELAY_2 OUTPUT_PIN_2
-  #define BUTTON_1 INPUT_PIN_1
-  #define BUTTON_2 INPUT_PIN_2
-  #define NUMBER_OF_RELAYS 2
-#endif
-
-// Roller Shutter
-#ifdef ROLLER_SHUTTER
-  #define RS_ID 0
-  #define RELAY_ID_1 0
-  #define RELAY_1 OUTPUT_PIN_1
-  #define RELAY_2 OUTPUT_PIN_2
-  #define BUTTON_1 INPUT_PIN_1
-  #define BUTTON_2 INPUT_PIN_2
-  #define NUMBER_OF_RELAYS 2
-#endif
+#define RELAY_ID_1 0
+#define RELAY_ID_2 1
+#define RELAY_1 OUTPUT_PIN_1
+#define RELAY_2 OUTPUT_PIN_2
+#define BUTTON_1 INPUT_PIN_1
+#define BUTTON_2 INPUT_PIN_2
 
 #define PS_PIN INPUT_PIN_7
 
@@ -123,10 +103,6 @@
 /*  *******************************************************************************************
                     EEPROM Definitions
  *  *******************************************************************************************/
-#define SIZE_OF_INT 2
-#define EEPROM_OFFSET 512                               // First eeprom address to use (prior addresses are taken)
-#define EEA_RS_TIME_DOWN EEPROM_OFFSET                  // EEPROM address to save RShutter travel down time
-#define EEA_RS_TIME_UP EEA_RS_TIME_DOWN+SIZE_OF_INT     // EEPROM address to save RShutter travel up time
-#define EEA_RS_POSITION EEA_RS_TIME_UP+SIZE_OF_INT      // EEPROM address to save RShutter last known position
-
+#define EEPROM_RS_OFFSET 512
+#define EEPROM_CONFIG_OFFSET 544
 #endif

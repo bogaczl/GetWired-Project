@@ -1,6 +1,24 @@
 #ifndef MySensordevice_h
 #define MySensordevice_h
 
+
+enum class DEVICE { 
+  Relay1 = 1,
+  Relay2 = 2,
+  Button1 = 3,
+  Button2 = 4,
+  Input1 = 5,
+  Input2 = 6,
+  RelayButton1 = 7,
+  RelayButton2 = 8,
+  Shutter = 9,
+  PowerSensor = 10,
+  InternTemp = 11,
+  ExternTempDS = 12,
+  ExternTempDHT = 13,
+  ExternTempSHT = 14
+};
+
 /*  *******************************************************************************************
  *                                    MySensor device decorators
  *  *******************************************************************************************/
@@ -32,6 +50,7 @@ class MySensorButton : public MySensorDevice {
   protected:  
     MyMessage * msgShort;
     MyMessage * msgLong;
+    MyMessage * msgDouble;
     Button * button;
     uint8_t previousLongState;
   public:
@@ -104,21 +123,40 @@ class MySensorExternalTemperature : public MySensorDevice {
 };
 
 class MySensorShutterControler : public MySensorDevice {
+    const unsigned long CALIBRATION_DELAY;
     Button * upButton;
     Button * downButton;
-    ShutterControler * shutterControler;
+    SmartShutterControler * smartShutterControler;
     PowerSensor * powerSensor;
+    Memory * memory;
     MyMessage * msgPercent;
-    bool calibrated;
-    uint8_t downTime;
-    uint8_t upTime;
-    uint8_t position;
+    MyMessage * msgDoubleClick;
     uint8_t desiredPosition;
+    uint8_t position;
+    void goUp();
+    void goDown();
+    void stop();
+    int calibrateUpTime();
+    int calibrateDownTime();
+    void calibrate();
   public:    
-    MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor);
+    MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor, Memory * memory);
+    virtual void presentDevice();
     virtual void initDevice();
     virtual void processMessage(const MyMessage &);
     virtual void updateDevice();
 };
+
+
+
+class MySensorDeviceFactory {
+  Relay * relay1;
+  Relay * relay2;
+  PowerSensor * powerSensor;
+public:
+  MySensorDeviceFactory();
+  MySensorDevice * createDevice(DEVICE device);
+};
+
 
 #endif

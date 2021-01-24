@@ -1,10 +1,37 @@
 #include "Arduino.h"
 #include <core/MySensorsCore.h>
+#include "Memory.h"
 #include "Device.h"
 #include "PowerSensor.h"
 #include "InternalTemperature.h"
 #include "ExternalTemperature.h"
 #include "MySensorDevice.h"
+
+MySensorDeviceFactory::MySensorDeviceFactory() {
+  relay1 = new Relay( RELAY_1);
+  relay2 = new Relay( RELAY_2);
+  powerSensor = new PowerSensor( PS_PIN );
+}
+
+MySensorDevice * MySensorDeviceFactory::createDevice(DEVICE device) {
+  switch (device) {
+    case DEVICE::Relay1:        return new MySensorRelay("Relay 1", relay1 );
+    case DEVICE::Relay2:        return new MySensorRelay("Relay 2", relay2 ); 
+    case DEVICE::Button1:       return new MySensorButton("Button 1", new Button( BUTTON_1 )); 
+    case DEVICE::Button2:       return new MySensorButton("Button 2", new Button( BUTTON_2 )); 
+    case DEVICE::Input1:        return new MySensorSimpleInput("Input 1", new Input( INPUT_PIN_3 )); 
+    case DEVICE::Input2:        return new MySensorSimpleInput("Input 2", new Input( INPUT_PIN_4 )); 
+    case DEVICE::RelayButton1:  return new MySensorRelayButton("Button 1", new Button( BUTTON_1 ), relay1 ); 
+    case DEVICE::RelayButton2:  return new MySensorRelayButton("Button 2", new Button( BUTTON_2 ), relay2 ); 
+    case DEVICE::Shutter:       return new MySensorShutterControler("Shutter", new Button( BUTTON_1 ), new Button( BUTTON_2 ), new ShutterControler(RELAY_1, RELAY_2), powerSensor, new Memory(3, EEPROM_RS_OFFSET));
+    case DEVICE::PowerSensor:   return new MySensorPowerSensor("Power Sensor", powerSensor, relay1, relay2);
+    case DEVICE::InternTemp:    return new MySensorInternalTemperature("Internal Thermometer", new InternalTemperature( IT_PIN ), relay1, relay2);
+    case DEVICE::ExternTempDS:  return new MySensorExternalTemperature("External Thermometer", new ExternalTemperature_DS18B20( ONE_WIRE_PIN ));
+    case DEVICE::ExternTempDHT: return new MySensorExternalTemperature("External Thermometer", new ExternalTemperature_DHT22( ONE_WIRE_PIN ));
+    case DEVICE::ExternTempSHT: return new MySensorExternalTemperature("External Thermometer", new ExternalTemperature_SHT30( ));
+  }
+  return NULL;
+}
 
 /*  *******************************************************************************************
  *                                    MySensor general device
@@ -45,9 +72,10 @@ void MySensorSimpleInput::updateDevice() {
 /*  *******************************************************************************************
  *                                    MySensor button
  *  *******************************************************************************************/
-MySensorButton::MySensorButton(const char *description, Button * button):MySensorDevice(S_BINARY, description, 2),button(button) { 
+MySensorButton::MySensorButton(const char *description, Button * button):MySensorDevice(S_BINARY, description, 3),button(button) { 
     msgShort = new MyMessage(sensorId,V_LIGHT);
     msgLong = new MyMessage(sensorId+1,V_LIGHT);
+    msgDouble = new MyMessage(sensorId+2,V_LIGHT);
 }
 
 void MySensorButton::presentDevice() {
@@ -58,27 +86,37 @@ void MySensorButton::presentDevice() {
   sprintf(con,"%s %s",description, "long");  
   present(sensorId+1, S_BINARY, con);
   wait(PRESENTATION_DELAY);   
+  sprintf(con,"%s %s",description, "double");  
+  present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);   
 }
 
 void MySensorButton::initDevice() {
   send(msgShort->setSensor(sensorId).set(button->getShortState()));
   previousLongState = button->getLongState();
   send(msgLong->setSensor(sensorId+1).set(previousLongState));
+  send(msgDouble->setSensor(sensorId+2).set(0));
 }
 
 void MySensorButton::updateDevice() {
   button->checkInput();
   uint8_t state = button->getShortState();
   if (state) {
-    send(msgShort->setSensor(sensorId).set("1"));
-    delay(100);
-    send(msgShort->setSensor(sensorId).set("0"));
+    send(msgShort->set("1"));
+    delay(50);
+    send(msgShort->set("0"));
   }
   state = button->getLongState();
   if (previousLongState != state) {
-    send(msgLong->setSensor(sensorId+1).set(state));
+    send(msgLong->set(state));
     previousLongState = state;
   }
+  state = button->getDoubleState();
+  if (state) {
+    send(msgDouble->set("1"));
+    delay(50);
+    send(msgDouble->set("0"));
+  }  
 }
 
 /*  *******************************************************************************************
@@ -271,59 +309,198 @@ void MySensorExternalTemperature::updateDevice() {
 /*  *******************************************************************************************
  *                                    MySensor shutter controler
  *  *******************************************************************************************/
-MySensorShutterControler::MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor):MySensorDevice(S_COVER, description),shutterControler(shutterControler),powerSensor(sensor) {
+MySensorShutterControler::MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor, Memory * memory):MySensorDevice(S_COVER, description,2),powerSensor(sensor),memory(memory),CALIBRATION_DELAY(10000),position(0) {
   msgPercent = new MyMessage (sensorId, V_PERCENTAGE);
+  msgDoubleClick = new MyMessage(sensorId+1, V_LIGHT);
+  smartShutterControler = new SmartShutterControler(shutterControler);
+  if (memory->load(0) != 255) {
+    position = memory->load(0);
+    smartShutterControler->calibrate(memory->load(1), memory->load(2), position);
+  }  
 }
 
+void MySensorShutterControler::goUp() {
+  desiredPosition=0;
+  smartShutterControler->goUp();
+}
+
+void MySensorShutterControler::goDown() {
+  desiredPosition=100;
+  smartShutterControler->goDown();
+}
+
+void MySensorShutterControler::stop() {
+  desiredPosition=smartShutterControler->getPosition();
+  smartShutterControler->stop();
+  memory->save(desiredPosition, 0);
+}
+
+int MySensorShutterControler::calibrateUpTime() {
+  float workCurrent;
+  unsigned long startTime = millis();
+  smartShutterControler->goUp();
+  delay(2000);
+  while(powerSensor->measureAC() > 0.3*workCurrent) {
+    if (millis()-startTime > 60000) return 0;
+    delay(50);
+  }
+  smartShutterControler->stop();
+  return (millis()-startTime)/1000;
+}
+int MySensorShutterControler::calibrateDownTime() {
+  float workCurrent;
+  unsigned long startTime = millis();
+  smartShutterControler->goDown();
+  delay(2000);
+  while(powerSensor->measureAC() > 0.3*workCurrent) {
+    if (millis()-startTime > 60000) return 0;
+    delay(50);
+  }
+  smartShutterControler->stop();
+  return (millis()-startTime)/1000;
+}
+
+void MySensorShutterControler::calibrate() {
+  float workCurrent;
+  int position = smartShutterControler->getPosition();
+  unsigned long upTime, downTime;
+  if (position == 100) {
+    upTime = calibrateUpTime();
+    downTime = calibrateDownTime();
+    smartShutterControler->calibrate(upTime,downTime,100);
+  }
+  if (position == 0) {
+    downTime = calibrateDownTime();
+    upTime = calibrateUpTime();
+    smartShutterControler->calibrate(upTime,downTime,0);
+  }
+  if (upTime > 255) {
+    upTime = 255;
+  }
+  if (downTime > 255) {
+    downTime = 255;
+  }
+  memory->save(position, 0);
+  memory->save(upTime, 1);
+  memory->save(downTime, 2);
+}
 
 void MySensorShutterControler::initDevice() {
-    send(MyMessage(sensorId, V_UP).set(0));
-    request(sensorId, V_UP);
-    wait(2000, C_SET, V_UP);
+  send(MyMessage(sensorId, V_UP).set(0));
+  request(sensorId, V_UP);
+  wait(2000, C_SET, V_UP);
 
-    send(MyMessage(sensorId, V_DOWN).set(0));
-    request(sensorId, V_DOWN);
-    wait(2000, C_SET, V_DOWN);
+  send(MyMessage(sensorId, V_DOWN).set(0));
+  request(sensorId, V_DOWN);
+  wait(2000, C_SET, V_DOWN);
 
-    send(MyMessage(sensorId, V_STOP).set(0));
-    request(sensorId, V_STOP);
-    wait(2000, C_SET, V_STOP);
+  send(MyMessage(sensorId, V_STOP).set(0));
+  request(sensorId, V_STOP);
+  wait(2000, C_SET, V_STOP);
 
-    send(msgPercent->set(position));
-    request(sensorId, V_PERCENTAGE);
-    wait(2000, C_SET, V_PERCENTAGE); 
+  send(msgPercent->set(position));
+  request(sensorId, V_PERCENTAGE);
+  wait(2000, C_SET, V_PERCENTAGE);
+
+  send(msgDoubleClick->setSensor(sensorId+1).set(0));
+  request(sensorId+1, V_STATUS);
+  wait(2000, C_SET, V_STATUS);
 }
 
+void MySensorShutterControler::presentDevice() {  
+  MySensorDevice::presentDevice();
+  char con[40];
+  sprintf(con,"%s %s",description, "doubleClick");  
+  present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);        
+}
 
 void MySensorShutterControler::processMessage(const MyMessage &message) {
   if (message.sensor != sensorId) return;
   if (message.type == V_PERCENTAGE) {
+    if (!smartShutterControler->isCalibrated()) return;
     desiredPosition = atoi(message.data);
-    desiredPosition = desiredPosition > 100 ? 100 : desiredPosition;
-    desiredPosition = desiredPosition < 0 ? 0 : desiredPosition;
-  }
-  else if(message.type == V_DOWN) {
+    if (desiredPosition > 100) desiredPosition = 100;;
+    if (desiredPosition < 0) desiredPosition = 0;
+    if (desiredPosition < smartShutterControler->getPosition())
+      smartShutterControler->goUp();
+    else if (desiredPosition > smartShutterControler->getPosition())
+      smartShutterControler->goDown();
   }
   else if(message.type == V_UP) {
+    goUp();
+  }
+  else if(message.type == V_DOWN) {
+    goDown();
   }
   else if(message.type == V_STOP) {
+    stop();
   }
 }
 
-void MySensorShutterControler::updateDevice() {
-  // Handling movement ordered by controller (new position percentage)
-  if (desiredPosition != position)  {
-    float movementRange = ((float)desiredPosition - (float)position) / 100;   // Downward => MR > 0; Upward MR < 0
-    int movementDirection = movementRange > 0 ? 1 : 0;                        // MovementDirection: 1 -> Down; 0 -> Up
+// logic:
+// press 
+//  - if stopped -> it starts:
+//    - release before 1s -> goes to edge (if calibrated)
+//    - release after 1s -> stops 
+//  - if runes -> stops
+// calibrate
+//  - long press (>10s), when on edge 
 
-    //shutterControler->moveUp();
-    //wait(MovementTime);
-    shutterControler->stop();
-    position = desiredPosition;
-    //EEPROM.put(EEA_RS_POSITION, position);
-    send(msgPercent->set(position));
-    
+void MySensorShutterControler::updateDevice() {
+  static int previousPosition = 0;
+  int position = smartShutterControler->getPosition();
+  SmartShutterControler::State state = smartShutterControler->getState();
+  
+  upButton->checkInput();
+  if (upButton->getShortState()) {
+    if (state==SmartShutterControler::State::IDLE) {
+      goUp();
+    }
+    else {
+      stop();
+    }
+    state = smartShutterControler->getState();
   }
-  // If no new position set by percentage, check buttons
-  else  { }
+  if (upButton->getLongState()) {
+    if ((position == 100) && (upButton->getLongPressTime() > CALIBRATION_DELAY)) {
+      calibrate();
+      return;
+    }
+    smartShutterControler->goUp();
+    desiredPosition=smartShutterControler->getPosition();
+    return;
+  }
+  
+  downButton->checkInput();
+  if (downButton->getShortState()) {
+    if (state==SmartShutterControler::State::IDLE) {
+      goDown();
+    }
+    else {
+      stop();
+    }
+    state = smartShutterControler->getState();
+  }
+  if (downButton->getLongState()) {
+    if ((position == 0) && (downButton->getLongPressTime() > CALIBRATION_DELAY)) {
+      calibrate();
+      return;
+    }
+    smartShutterControler->goDown();
+    desiredPosition = smartShutterControler->getPosition();
+    return;
+  }
+  
+  if (state!=SmartShutterControler::State::IDLE) {  
+    if (((state==SmartShutterControler::State::GOING_UP) && (desiredPosition <= position)) ||
+        ((state==SmartShutterControler::State::GOING_DOWN) && (desiredPosition >= position)))
+    {
+        stop();
+    }
+  }
+  if (position != previousPosition) {
+    previousPosition = position;
+    send(msgPercent->set(position));
+  }
 }

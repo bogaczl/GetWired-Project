@@ -3,6 +3,7 @@
  *  *******************************************************************************************/
 #include "Configuration.h"
 #include <MySensors.h>
+#include "Memory.h"
 #include "Device.h"
 #include "PowerSensor.h"
 #include "InternalTemperature.h"
@@ -13,6 +14,7 @@
                                         Globals
  *  *******************************************************************************************/
 // Initialization
+char * NAME = "VanillaSensor";
 MySensorDevice * mySensorDevices[MAXDEVICESCOUNT];
 
 /*  *******************************************************************************************
@@ -23,16 +25,21 @@ void before() {
   uint32_t InitDelay = MY_NODE_ID * INIT_DELAY;
   wait(InitDelay);
 
-  int i=0;
-  Relay * relay1 = new Relay( RELAY_1);
-  mySensorDevices[i++] = new MySensorRelay("Relay 1", relay1 );
-  mySensorDevices[i++] = new MySensorRelayButton("Button 1", new Button( BUTTON_1 ), relay1 );
-  Relay * relay2 = new Relay( RELAY_2);
-  mySensorDevices[i++] = new MySensorRelay("Relay 2", relay2 );
-  mySensorDevices[i++] = new MySensorRelayButton("Button 2", new Button( BUTTON_2 ), relay2 ); 
-  mySensorDevices[i++] = new MySensorPowerSensor("Power Sensor", new PowerSensor( PS_PIN ), relay1, relay2);
-  mySensorDevices[i++] = new MySensorInternalTemperature("Internal Thermometer", new InternalTemperature( IT_PIN ), relay1, relay2);
-  mySensorDevices[i++] = new MySensorExternalTemperature("External Thermometer", new ExternalTemperature_DHT22( ONE_WIRE_PIN ));  //DHT22, SHT30, DS18B20
+  Memory * config = new Memory(100);
+  if (config->load() != 255) {
+
+  }
+  else {
+    int i=0;
+    MySensorDeviceFactory factory;
+    mySensorDevices[i++] = factory.createDevice(DEVICE::Relay1);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::Button1);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::Relay2);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::Button2);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::PowerSensor);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::InternTemp);
+    mySensorDevices[i++] = factory.createDevice(DEVICE::ExternTempDHT);
+  }
 }
 
 /*  *******************************************************************************************
@@ -40,7 +47,7 @@ void before() {
  *  *******************************************************************************************/
 void presentation() {
 
-  sendSketchInfo(SN, SV);
+  sendSketchInfo(NAME, "1.0");
  
   for ( MySensorDevice * d : mySensorDevices) {
     if (d)
