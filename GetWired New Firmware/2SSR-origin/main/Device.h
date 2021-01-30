@@ -72,6 +72,4 @@ class SmartShutterControler {
     State getState();
 };
 
-
-
 #endif

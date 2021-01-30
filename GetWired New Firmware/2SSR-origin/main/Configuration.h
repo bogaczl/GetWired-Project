@@ -5,10 +5,10 @@
                     MySensors Definitions
  *  *******************************************************************************************/
 // Identification
-#define MY_NODE_ID 5                           // Set node ID
+#define MY_NODE_ID 25                           // Set node ID
 
 // Selecting transmission settings
-#define MY_DEBUG
+// #define MY_DEBUG
 #define MY_RS485                              // Enable RS485 transport layer
 #define MY_RS485_DE_PIN 7                     // DE Pin definition
 #define MY_RS485_BAUD_RATE 57600              // Set RS485 baud rate
@@ -100,9 +100,4 @@
   #define IT_PIN INPUT_PIN_7
 #endif
 
-/*  *******************************************************************************************
-                    EEPROM Definitions
- *  *******************************************************************************************/
-#define EEPROM_RS_OFFSET 512
-#define EEPROM_CONFIG_OFFSET 544
 #endif

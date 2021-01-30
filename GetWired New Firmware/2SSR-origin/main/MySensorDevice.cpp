@@ -14,6 +14,8 @@ MySensorDeviceFactory::MySensorDeviceFactory() {
 }
 
 MySensorDevice * MySensorDeviceFactory::createDevice(DEVICE device) {
+  Serial.print("create: ");
+  Serial.println((int)device);
   switch (device) {
     case DEVICE::Relay1:        return new MySensorRelay("Relay 1", relay1 );
     case DEVICE::Relay2:        return new MySensorRelay("Relay 2", relay2 ); 
@@ -23,7 +25,7 @@ MySensorDevice * MySensorDeviceFactory::createDevice(DEVICE device) {
     case DEVICE::Input2:        return new MySensorSimpleInput("Input 2", new Input( INPUT_PIN_4 )); 
     case DEVICE::RelayButton1:  return new MySensorRelayButton("Button 1", new Button( BUTTON_1 ), relay1 ); 
     case DEVICE::RelayButton2:  return new MySensorRelayButton("Button 2", new Button( BUTTON_2 ), relay2 ); 
-    case DEVICE::Shutter:       return new MySensorShutterControler("Shutter", new Button( BUTTON_1 ), new Button( BUTTON_2 ), new ShutterControler(RELAY_1, RELAY_2), powerSensor, new Memory(3, EEPROM_RS_OFFSET));
+    case DEVICE::Shutter:       return new MySensorShutterControler("Shutter", new Button( BUTTON_1 ), new Button( BUTTON_2 ), new ShutterControler(RELAY_1, RELAY_2), powerSensor, new Memory(3, SHIFT_RS));
     case DEVICE::PowerSensor:   return new MySensorPowerSensor("Power Sensor", powerSensor, relay1, relay2);
     case DEVICE::InternTemp:    return new MySensorInternalTemperature("Internal Thermometer", new InternalTemperature( IT_PIN ), relay1, relay2);
     case DEVICE::ExternTempDS:  return new MySensorExternalTemperature("External Thermometer", new ExternalTemperature_DS18B20( ONE_WIRE_PIN ));

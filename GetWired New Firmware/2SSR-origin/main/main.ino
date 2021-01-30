@@ -14,31 +14,29 @@
                                         Globals
  *  *******************************************************************************************/
 // Initialization
-char * NAME = "VanillaSensor";
+void(* resetFunc) (void) = 0;
+char * NAME;
+Memory nameMemory(20,SHIFT_NODENAME);
+Memory configMemory(80,SHIFT_NODECONFIG);
 MySensorDevice * mySensorDevices[MAXDEVICESCOUNT];
 
 /*  *******************************************************************************************
                                             Before
  *  *******************************************************************************************/
 void before() {
+
+  Serial.begin(57600);
+  Serial.println("before");
+
+  wait(MY_NODE_ID * INIT_DELAY);
+
+  NAME = nameMemory.loadString("VanillaSensor");
+  char * config = configMemory.loadString("41324");  //relay1, button1, relay2, button2
   
-  uint32_t InitDelay = MY_NODE_ID * INIT_DELAY;
-  wait(InitDelay);
-
-  Memory * config = new Memory(100);
-  if (config->load() != 255) {
-
-  }
-  else {
-    int i=0;
-    MySensorDeviceFactory factory;
-    mySensorDevices[i++] = factory.createDevice(DEVICE::Relay1);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::Button1);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::Relay2);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::Button2);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::PowerSensor);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::InternTemp);
-    mySensorDevices[i++] = factory.createDevice(DEVICE::ExternTempDHT);
+  MySensorDeviceFactory factory;
+  uint8_t deviceCount = (uint8_t)config[0]-48;
+  for (uint8_t i = 0; i < deviceCount; i++) {
+    mySensorDevices[i] = factory.createDevice(DEVICE(config[i+1]-48));
   }
 }
 
@@ -66,12 +64,23 @@ void InitConfirmation() {
   }
 }
 
-
 /*  *******************************************************************************************
                                         MySensors Receive
  *  *******************************************************************************************/
 void receive(const MyMessage &message)  {
-   for ( MySensorDevice * d : mySensorDevices) {
+  if ((message.sensor == 0) && (message.type == V_CUSTOM)) {
+    //      topic/node/child/command/ack/type
+    //exmple: gwi/25/0/1(set)/0/48  1 Reset | 2 Name  |  3 Config  | 4 RS | 
+      
+      Serial.println(message.getString());
+      
+      char * buf = message.getString();
+      if (buf[0]=='1') resetFunc();
+      else if (buf[0]=='2') nameMemory.saveString(buf);
+      else if (buf[0]=='3') configMemory.saveString(buf);
+      else if (buf[0]=='4') Memory(3, SHIFT_RS).save(buf);
+  }
+  for ( MySensorDevice * d : mySensorDevices) {
     if (d)
       d->processMessage(message);
   }
