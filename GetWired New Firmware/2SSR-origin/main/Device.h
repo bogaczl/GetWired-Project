@@ -57,11 +57,12 @@ class SmartShutterControler {
     int downTime;
     int position;
     unsigned long startTime;
+    int startPosition;
     State state = State::IDLE;
     const ShutterControler * shutterControler;
     void updatePosition();
   public:
-    SmartShutterControler(ShutterControler * shutterControler, int position=0, int upTime=0, int downTime=0);
+    SmartShutterControler(ShutterControler * shutterControler, int position=100, int upTime=0, int downTime=0);
     void goUp();
     void goDown();
     void stop();

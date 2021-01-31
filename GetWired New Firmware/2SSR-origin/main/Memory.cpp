@@ -1,27 +1,23 @@
 #include "Configuration.h"
 #include "Memory.h"
 
-int Memory::initialAddress = EEPROM_OFFSET;
-
-Memory::Memory(int size):size(size),begin(initialAddress) {
-  initialAddress += size;
-}
-
 Memory::Memory(int size, int address):size(size),begin(EEPROM_OFFSET + address) {
 
 }
 
-void Memory::save(uint8_t value, int position) {
+Memory& Memory::save(uint8_t value, int position) {
   if (position < size) {
     EEPROM.put(begin+position, value);
   }
+  return *this;
 }
 
-void Memory::saveString(char * name) {
+void Memory::saveString(char * buf) {
   int i = 0;
-  while ((name[i] != '\0') && (i < 20)) {
-     save(name[i],i);
+  do {
+    save(buf[i],i);
   }
+  while ((buf[i] != '\0') && (buf[i] != ' ') && (++i < size));
 }
 
 uint8_t Memory::load(int position) {
@@ -32,16 +28,16 @@ uint8_t Memory::load(int position) {
   return 0;
 }
 
-char * Memory::loadString() {
-  static char name[20];
+char * Memory::loadString(char * buf) {
   int i = 0;
   do {
-    name[i] = load(i);
+    buf[i] = load(i);
   }
-  while ((name[i] != '\0') && (i < size));
-  return name;
+  while ((buf[i] != '\0') && (buf[i] != ' ') && (i++ < size));
+  buf[i]='\0';
+  return buf;
 }
 
-char * Memory::loadString(char * defaultValue) {
-  return (load()==255) ? defaultValue : loadString();
+char * Memory::loadString(char * buf, char * defaultValue) {
+  return (load()==255) ? defaultValue : loadString(buf);
 }

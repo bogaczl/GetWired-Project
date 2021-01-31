@@ -103,55 +103,69 @@ ShutterControler::ShutterControler(const uint8_t upPin, const uint8_t downPin):u
 }
 
 void ShutterControler::stop()  {
+
+Serial.println("Stop");
+  
   digitalWrite(upPin, OffState);
   digitalWrite(downPin, OffState);
 }
 
 void ShutterControler::goDown()  {
+
+Serial.println("go DOWN");
+  
   digitalWrite(upPin, OffState);
   delay(10);
   digitalWrite(downPin, OnState);
 }
 
 void ShutterControler::goUp()  {
+
+Serial.println("go UP");
+  
   digitalWrite(downPin, OffState);
   delay(10);
   digitalWrite(upPin, OnState);
 }
 
 
-SmartShutterControler::SmartShutterControler(ShutterControler * shutterControler, int position=0, int upTime=0, int downTime=0):shutterControler(shutterControler),position(position),upTime(upTime),downTime(downTime) {
-    
+SmartShutterControler::SmartShutterControler(ShutterControler * shutterControler, int position=100, int upTime=0, int downTime=0):shutterControler(shutterControler),position(position),upTime(upTime),downTime(downTime) {
+  
 }
 
 void SmartShutterControler::updatePosition() {
-  unsigned long trawelTime = millis() - startTime;
+  unsigned long movementTime = millis() - startTime;
   if ((state == State::GOING_UP) && (upTime)) {
-    position -= (100.0*trawelTime)/upTime;
-    if (position < 0) 
-      position = 0;
-  }
-  if ((state == State::GOING_DOWN) && (downTime)) {
-    position += (100.0*trawelTime)/downTime;
+    position = startPosition + movementTime/(upTime*10);
     if (position > 100) 
       position = 100;
+  }
+  if ((state == State::GOING_DOWN) && (downTime)) {
+    position = startPosition - movementTime/(downTime*10);;
+    if (position < 0) 
+      position = 0;
   }
 }
    
 void SmartShutterControler::goUp() {
-  if (state != State::GOING_UP) {
-    shutterControler->stop();
-  }
+  if (state == State::GOING_DOWN)  
+    stop();
+  if (state != State::IDLE)
+    return;
+  shutterControler->goUp();
   startTime = millis();
+  startPosition = position;
   state = State::GOING_UP;
 }
 
 void SmartShutterControler::goDown() {
-  if (state != State::GOING_DOWN) {
-    shutterControler->stop();
-  }
+  if (state == State::GOING_UP)  
+    stop();
+  if (state != State::IDLE)
+    return;
   shutterControler->goDown();
   startTime = millis();
+  startPosition = position;
   state = State::GOING_DOWN;  
 }
 
@@ -165,10 +179,10 @@ int SmartShutterControler::getPosition() {
   if (!isCalibrated()) {
     if (state == State::GOING_UP) 
     {
-      position = 0;
+      position = 100;
     }
     if (state == State::GOING_DOWN) { 
-      position = 100; 
+      position = 0; 
     }
   }
   else
@@ -181,8 +195,8 @@ void SmartShutterControler::goPosition(int position) {
 }
 
 void SmartShutterControler::calibrate(int upTime, int downTime, int position) {
-  this->upTime = upTime + 1000;
-  this->downTime = downTime + 1000;
+  this->upTime = upTime + 1;
+  this->downTime = downTime + 1;
   this->position = position;
 }
 

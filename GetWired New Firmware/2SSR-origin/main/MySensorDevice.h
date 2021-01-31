@@ -148,7 +148,6 @@ class MySensorShutterControler : public MySensorDevice {
 };
 
 
-
 class MySensorDeviceFactory {
   Relay * relay1;
   Relay * relay2;
