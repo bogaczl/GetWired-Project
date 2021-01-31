@@ -18,7 +18,9 @@ Button::Button(const uint8_t sensorPin):sensorPin(sensorPin),previousClickTime(0
 
 void Button::checkInput() {
  if (digitalRead(sensorPin) != LOW) {
-    if (state == State::LONG_PRESSED) state = State::IDLE;
+    if (state == State::LONG_PRESSED) {
+      state = State::IDLE;
+    }
     return;
   }
   
@@ -128,21 +130,25 @@ void SmartShutterControler::updatePosition() {
   unsigned long movementTime = millis() - startTime;
   if ((state == State::GOING_UP) && (upTime)) {
     position = startPosition + movementTime/(upTime*10);
-    if (position > 100) 
+    if (position > 100) {
       position = 100;
+    }   
   }
   if ((state == State::GOING_DOWN) && (downTime)) {
     position = startPosition - movementTime/(downTime*10);;
-    if (position < 0) 
+    if (position < 0) {
       position = 0;
+    }
   }
 }
    
 void SmartShutterControler::goUp() {
-  if (state == State::GOING_DOWN)  
+  if (state == State::GOING_DOWN) { 
     stop();
-  if (state != State::IDLE)
+  }
+  if (state != State::IDLE) {
     return;
+  }
   shutterControler->goUp();
   startTime = millis();
   startPosition = position;
@@ -150,10 +156,12 @@ void SmartShutterControler::goUp() {
 }
 
 void SmartShutterControler::goDown() {
-  if (state == State::GOING_UP)  
+  if (state == State::GOING_UP) { 
     stop();
-  if (state != State::IDLE)
+  }
+  if (state != State::IDLE) {
     return;
+  }
   shutterControler->goDown();
   startTime = millis();
   startPosition = position;
@@ -176,13 +184,16 @@ int SmartShutterControler::getPosition() {
       position = 0; 
     }
   }
-  else
+  else {
     updatePosition();
+  }
   return position;
 }
 
 void SmartShutterControler::goPosition(int position) {
-  if (!isCalibrated()) return;
+  if (!isCalibrated()) {
+    return;
+  }
 }
 
 void SmartShutterControler::calibrate(int upTime, int downTime, int position) {

@@ -142,7 +142,9 @@ void MySensorRelay::updateDevice() {
 }
 
 void MySensorRelay::processMessage(const MyMessage &message) {
-  if (message.sensor != sensorId) return;
+  if (message.sensor != sensorId) {
+    return;
+  }
   if (message.type == V_STATUS)
     relay->setState(message.getBool());
 }
@@ -316,10 +318,12 @@ MySensorShutterControler::MySensorShutterControler(const char *description, Butt
   msgDownDoubleClick = new MyMessage(sensorId+2, V_LIGHT);
   smartShutterControler = new SmartShutterControler(shutterControler);
   position = memory->load(0);
-  if (position>100) position=100;
+  if (position>100) {
+    position=100;
+  }
   if ((memory->load(1) != 255) && (memory->load(2) != 255)) {
     smartShutterControler->calibrate(memory->load(1), memory->load(2), position);
-  }  
+  } 
 }
 
 void MySensorShutterControler::goUp() {
@@ -343,7 +347,9 @@ int MySensorShutterControler::calibrateUpTime() {
   delay(2000);
   float workCurrent = powerSensor->measureAC();
   while(powerSensor->measureAC() > 0.25*workCurrent) {
-    if (millis()-startTime > 120000) return 0;
+    if (millis()-startTime > 120000) {
+      return 0;
+    }
     delay(50);
   }
   smartShutterControler->stop();
@@ -356,7 +362,9 @@ int MySensorShutterControler::calibrateDownTime() {
   delay(2000);
   float workCurrent = powerSensor->measureAC();
   while(powerSensor->measureAC() > 0.25*workCurrent) {
-    if (millis()-startTime > 120000) return 0;
+    if (millis()-startTime > 120000) {
+      return 0;
+    }
     delay(50);
   }
   smartShutterControler->stop();
@@ -427,16 +435,26 @@ void MySensorShutterControler::presentDevice() {
 }
 
 void MySensorShutterControler::processMessage(const MyMessage &message) {
-  if (message.sensor != sensorId) return;
+  if (message.sensor != sensorId) {
+    return;
+  }
   if (message.type == V_PERCENTAGE) {
-    if (!smartShutterControler->isCalibrated()) return;
+    if (!smartShutterControler->isCalibrated()) {
+      return;
+    }
     desiredPosition = atoi(message.data);
-    if (desiredPosition > 100) desiredPosition = 100;;
-    if (desiredPosition < 0) desiredPosition = 0;
-    if (desiredPosition > smartShutterControler->getPosition())
+    if (desiredPosition > 100) {
+      desiredPosition = 100;
+    }
+    if (desiredPosition < 0) {
+      desiredPosition = 0;
+    }
+    if (desiredPosition > smartShutterControler->getPosition()) {
       smartShutterControler->goUp();
-    else if (desiredPosition < smartShutterControler->getPosition())
+    }
+    else if (desiredPosition < smartShutterControler->getPosition()) {
       smartShutterControler->goDown();
+    }
   }
   else if(message.type == V_UP) {
     goUp();
@@ -529,7 +547,8 @@ void MySensorShutterControler::updateDevice() {
     send(MyMessage(sensorId, V_UP).set(state == SmartShutterControler::State::GOING_UP));
     send(MyMessage(sensorId, V_DOWN).set(state == SmartShutterControler::State::GOING_DOWN));
     send(MyMessage(sensorId, V_STOP).set(state == SmartShutterControler::State::IDLE));
-    if (state == SmartShutterControler::State::IDLE) 
+    if (state == SmartShutterControler::State::IDLE) {
       memory->save(position);
+    }
   }
 }

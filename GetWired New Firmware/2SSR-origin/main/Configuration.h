@@ -20,7 +20,7 @@
 
 // Other
 #define MY_TRANSPORT_WAIT_READY_MS 60000        // Time to wait for gateway to respond at startup (default 60000)
-#define MAXDEVICESCOUNT 30
+#define MAXDEVICESCOUNT 10
 
 // Output Config - one of these has to be defined
 #define DOUBLE_RELAY              // Define this node as a double relay node, setting below

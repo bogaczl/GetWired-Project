@@ -67,13 +67,14 @@ void InitConfirmation() {
  *  *******************************************************************************************/
 void receive(const MyMessage &message)  {
   //      topic/node/child/command/ack/type
-  // example: gwi/25/0/1(set)/0/48    0 Unlock| 1 Reset | 2 Name  |  3 Config  | 4 RS 
+  // example: gwi/25/0/1(set)/0/48    
+  // 0 Unlock| 1 Reset | 2 Name  |  3 Config  | 4 RS 
   bool static lock = true;
   if ((message.sensor == 0) && (message.type == V_CUSTOM)) {
     char * buf = message.getString();
     if (buf[0]=='0') lock = false;
     if (lock) return;
-    if (buf[0]=='1') resetFunc();
+    else if (buf[0]=='1') resetFunc();
     else if (buf[0]=='2') nameMemory.saveString(buf+1);
     else if (buf[0]=='3') configMemory.saveString(buf+1);
     else if (buf[0]=='4') Memory(3, SHIFT_RS).save(buf+1,0).save(buf+2,1).save(buf+3,2);
