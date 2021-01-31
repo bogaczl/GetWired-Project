@@ -309,10 +309,11 @@ void MySensorExternalTemperature::updateDevice() {
 /*  *******************************************************************************************
  *                                    MySensor shutter controler
  *  *******************************************************************************************/
-MySensorShutterControler::MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor, Memory * memory):MySensorDevice(S_COVER, description, 2),upButton(upButton),downButton(downButton),powerSensor(sensor),memory(memory),CALIBRATION_DELAY(10000),position(0) {
+MySensorShutterControler::MySensorShutterControler(const char *description, Button * upButton, Button * downButton, ShutterControler * shutterControler, PowerSensor * sensor, Memory * memory):MySensorDevice(S_COVER, description, 3),upButton(upButton),downButton(downButton),powerSensor(sensor),memory(memory),CALIBRATION_DELAY(10000),position(0) {
   
   msgPercent = new MyMessage (sensorId, V_PERCENTAGE);
-  msgDoubleClick = new MyMessage(sensorId+1, V_LIGHT);
+  msgUpDoubleClick = new MyMessage(sensorId+1, V_LIGHT);
+  msgDownDoubleClick = new MyMessage(sensorId+2, V_LIGHT);
   smartShutterControler = new SmartShutterControler(shutterControler);
   position = memory->load(0);
   if (position>100) position=100;
@@ -404,16 +405,24 @@ void MySensorShutterControler::initDevice() {
   request(sensorId, V_PERCENTAGE);
   wait(2000, C_SET, V_PERCENTAGE);
 
-  send(msgDoubleClick->setSensor(sensorId+1).set(0));
+  send(msgUpDoubleClick->setSensor(sensorId+1).set(0));
   request(sensorId+1, V_STATUS);
+  wait(2000, C_SET, V_STATUS);
+
+  send(msgDownDoubleClick->setSensor(sensorId+2).set(0));
+  request(sensorId+2, V_STATUS);
   wait(2000, C_SET, V_STATUS);
 }
 
 void MySensorShutterControler::presentDevice() {  
   MySensorDevice::presentDevice();
   char con[40];
-  sprintf(con,"%s %s",description, "doubleClick");  
+  sprintf(con,"%s %s",description, "up double");  
   present(sensorId+1, S_BINARY, con);
+  wait(PRESENTATION_DELAY);        
+
+  sprintf(con,"%s %s",description, "down double");  
+  present(sensorId+2, S_BINARY, con);
   wait(PRESENTATION_DELAY);        
 }
 
@@ -473,6 +482,11 @@ void MySensorShutterControler::updateDevice() {
     smartShutterControler->goUp();
     desiredPosition=smartShutterControler->getPosition();
   }
+  if (upButton->getDoubleState()) {
+      send(msgUpDoubleClick->set(1));
+      delay(100);
+      send(msgUpDoubleClick->set(0));
+  }
   
   downButton->checkInput();
   if (downButton->getShortState()) {
@@ -491,6 +505,11 @@ void MySensorShutterControler::updateDevice() {
     }
     smartShutterControler->goDown();
     desiredPosition = smartShutterControler->getPosition();
+  }
+  if (downButton->getDoubleState()) {
+      send(msgDownDoubleClick->set(1));
+      delay(100);
+      send(msgDownDoubleClick->set(0));
   }
 
   if ((!upButton->getLongState()) && (!downButton->getLongState()))

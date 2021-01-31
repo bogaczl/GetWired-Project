@@ -8,7 +8,7 @@
 #define MY_NODE_ID 26                         // Set node ID
 
 // Selecting transmission settings
-#define MY_DEBUG
+//#define MY_DEBUG
 #define MY_RS485                              // Enable RS485 transport layer
 #define MY_RS485_DE_PIN 7                     // DE Pin definition
 #define MY_RS485_BAUD_RATE 57600              // Set RS485 baud rate
@@ -79,7 +79,7 @@
 #define INTERVAL 300000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
 #define INIT_DELAY 200                      // A value to be multiplied by node ID value to obtain the time to wait during the initialization process
 #define PRESENTATION_DELAY 10               // Time (ms) to wait between subsequent presentation messages (default 10)
-#define LOOP_TIME 100                       // Main loop wait time (default 100)        
+#define LOOP_TIME 50                        // Main loop wait time (default 100)        
 
 /*  *******************************************************************************************
                     OUTPUT Config

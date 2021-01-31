@@ -34,7 +34,7 @@ void Button::checkInput() {
       return;
     }
   }
-  if (millis() - previousClickTime < 300) {
+  if (millis() - previousClickTime < 500) {
     state = State::DOUBLE_CLICKED;
     previousClickTime = 0;
     return;
@@ -103,26 +103,17 @@ ShutterControler::ShutterControler(const uint8_t upPin, const uint8_t downPin):u
 }
 
 void ShutterControler::stop()  {
-
-Serial.println("Stop");
-  
   digitalWrite(upPin, OffState);
   digitalWrite(downPin, OffState);
 }
 
 void ShutterControler::goDown()  {
-
-Serial.println("go DOWN");
-  
   digitalWrite(upPin, OffState);
   delay(10);
   digitalWrite(downPin, OnState);
 }
 
 void ShutterControler::goUp()  {
-
-Serial.println("go UP");
-  
   digitalWrite(downPin, OffState);
   delay(10);
   digitalWrite(upPin, OnState);

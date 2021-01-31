@@ -130,7 +130,8 @@ class MySensorShutterControler : public MySensorDevice {
     PowerSensor * powerSensor;
     Memory * memory;
     MyMessage * msgPercent;
-    MyMessage * msgDoubleClick;
+    MyMessage *  msgUpDoubleClick;
+    MyMessage *  msgDownDoubleClick;
     uint8_t desiredPosition;
     uint8_t position;
     void goUp();
