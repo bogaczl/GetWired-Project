@@ -18,7 +18,7 @@ public:
   Memory(int size, int address);
   Memory& save(uint8_t value, int position = 0);
   uint8_t load(int position = 0);
-  void saveString(char * name);
+  void saveString(const char * name);
   char * loadString(char * buf);
   char * loadString(char * buf, char * defaultValue);
 };

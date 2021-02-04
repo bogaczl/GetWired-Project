@@ -5,7 +5,7 @@
                     MySensors Definitions
  *  *******************************************************************************************/
 // Identification
-#define MY_NODE_ID 26                         // Set node ID
+#define MY_NODE_ID 2                          // Set node ID
 
 // Selecting transmission settings
 //#define MY_DEBUG
@@ -79,7 +79,7 @@
 #define INTERVAL 300000                     // Interval value for reporting readings of the sensors: temperature, power usage (default 300000)
 #define INIT_DELAY 200                      // A value to be multiplied by node ID value to obtain the time to wait during the initialization process
 #define PRESENTATION_DELAY 10               // Time (ms) to wait between subsequent presentation messages (default 10)
-#define LOOP_TIME 50                        // Main loop wait time (default 100)        
+#define LOOP_TIME 100                       // Main loop wait time (default 100)        
 
 /*  *******************************************************************************************
                     OUTPUT Config

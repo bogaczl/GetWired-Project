@@ -1,6 +1,27 @@
 #include "Configuration.h"
 #include "Device.h"
 
+Button * b[4];
+void pressB0() {
+  (*b)->interruptChange();
+}
+void pressB1() {
+  (*(b+1))->interruptChange();
+}
+void pressB2() {
+  (*(b+2))->interruptChange();
+}
+void pressB3() {
+  (*(b+3))->interruptChange();
+}
+void (*intMethod[4])() = {pressB0, pressB1, pressB2, pressB3};
+
+void setInterupt(uint8_t sensorPin, Button * button) {
+  static int interuptsSet=0;
+  b[interuptsSet]=button;
+  attachInterrupt(digitalPinToInterrupt(sensorPin), intMethod[interuptsSet++], FALLING);
+}
+
 Input::Input(const uint8_t sensorPin):sensorPin(sensorPin) {
   pinMode(sensorPin, INPUT_PULLUP);
 }
@@ -14,15 +35,38 @@ Button::Button(const uint8_t sensorPin):sensorPin(sensorPin),previousClickTime(0
   pinMode(sensorPin, INPUT_PULLUP);
   state = State::IDLE;
   checkInput();
+  setInterupt(sensorPin, this);
 }
 
+void Button::interruptChange() {
+  if (digitalRead(sensorPin) == LOW)
+    interrupt = true;
+}
+
+void Button::serveClick() {
+  interrupt = false;
+  if (millis() - previousClickTime < 1000) {
+    state = State::DOUBLE_CLICKED;
+    previousClickTime = 0;
+    return;
+  }
+  previousClickTime = millis();
+  state = State::CLICKED;
+}
+
+
 void Button::checkInput() {
+ //LOW <=> pressed 
  if (digitalRead(sensorPin) != LOW) {
     if (state == State::LONG_PRESSED) {
       state = State::IDLE;
+      interrupt = false;
+    }
+    else if ( interrupt ) {
+      serveClick();
     }
     return;
-  }
+ }
   
   if (state == State::LONG_PRESSED) {
     return;
@@ -33,17 +77,11 @@ void Button::checkInput() {
     if(millis() - startTime > 1000) {
       longPressTime = startTime;
       state = State::LONG_PRESSED;
+      interrupt = false;
       return;
     }
   }
-  if (millis() - previousClickTime < 500) {
-    state = State::DOUBLE_CLICKED;
-    previousClickTime = 0;
-    return;
-  }
-  previousClickTime = millis();
-  state = State::CLICKED;
-  return;
+  serveClick();
 }
 
 bool Button::getShortState() {
@@ -122,7 +160,7 @@ void ShutterControler::goUp()  {
 }
 
 
-SmartShutterControler::SmartShutterControler(ShutterControler * shutterControler, int position=100, int upTime=0, int downTime=0):shutterControler(shutterControler),position(position),upTime(upTime),downTime(downTime) {
+SmartShutterControler::SmartShutterControler(ShutterControler * shutterControler, int position, int upTime, int downTime):shutterControler(shutterControler),position(position),upTime(upTime),downTime(downTime) {
   
 }
 

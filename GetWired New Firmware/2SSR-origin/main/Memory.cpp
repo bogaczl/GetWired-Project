@@ -9,10 +9,10 @@ Memory& Memory::save(uint8_t value, int position) {
   if (position < size) {
     EEPROM.put(begin+position, value);
   }
-  return *this;
+  return (*this);
 }
 
-void Memory::saveString(char * buf) {
+void Memory::saveString(const char * buf) {
   int i = 0;
   do {
     save(buf[i],i);
@@ -39,5 +39,11 @@ char * Memory::loadString(char * buf) {
 }
 
 char * Memory::loadString(char * buf, char * defaultValue) {
-  return (load()==255) ? defaultValue : loadString(buf);
+  if (load()==255) {
+    sprintf(buf,"%s",defaultValue);
+  }
+  else {
+    loadString(buf);
+  }
+  return buf;
 }

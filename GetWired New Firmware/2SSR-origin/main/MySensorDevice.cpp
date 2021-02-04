@@ -87,7 +87,7 @@ void MySensorButton::presentDevice() {
   present(sensorId+1, S_BINARY, con);
   wait(PRESENTATION_DELAY);   
   sprintf(con,"%s %s",description, "double");  
-  present(sensorId+1, S_BINARY, con);
+  present(sensorId+2, S_BINARY, con);
   wait(PRESENTATION_DELAY);   
 }
 

@@ -15,8 +15,11 @@ class Button {
     unsigned long longPressTime;
     enum class State { IDLE, CLICKED, DOUBLE_CLICKED, LONG_PRESSED };
     State state = State::IDLE;
-    const uint8_t sensorPin; 
+    const uint8_t sensorPin;    
+    void serveClick();
+    volatile bool interrupt = false;
   public:
+    void interruptChange();
     Button(const uint8_t sensorPin);
     void checkInput();
     bool getShortState();
@@ -59,7 +62,7 @@ class SmartShutterControler {
     unsigned long startTime;
     int startPosition;
     State state = State::IDLE;
-    const ShutterControler * shutterControler;
+    ShutterControler * shutterControler;
     void updatePosition();
   public:
     SmartShutterControler(ShutterControler * shutterControler, int position=100, int upTime=0, int downTime=0);

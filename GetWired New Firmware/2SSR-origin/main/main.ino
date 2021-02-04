@@ -27,8 +27,8 @@ void before() {
 
   char config[40];
   nameMemory.loadString(NAME, "VanillaSensor");  //default: VanillaSensor
-  configMemory.loadString(config, "41324");      //default: relay1, button1, relay2, button2
-
+  configMemory.loadString(config, "61728:;");     //default: relay1, button1, relay2, button2
+ 
   wait(MY_NODE_ID * INIT_DELAY);
     
   MySensorDeviceFactory factory;
@@ -71,13 +71,13 @@ void receive(const MyMessage &message)  {
   // 0 Unlock| 1 Reset | 2 Name  |  3 Config  | 4 RS 
   bool static lock = true;
   if ((message.sensor == 0) && (message.type == V_CUSTOM)) {
-    char * buf = message.getString();
+    const char * buf = message.getString();
     if (buf[0]=='0') lock = false;
     if (lock) return;
     else if (buf[0]=='1') resetFunc();
     else if (buf[0]=='2') nameMemory.saveString(buf+1);
     else if (buf[0]=='3') configMemory.saveString(buf+1);
-    else if (buf[0]=='4') Memory(3, SHIFT_RS).save(buf+1,0).save(buf+2,1).save(buf+3,2);
+    else if (buf[0]=='4') Memory(3, SHIFT_RS).save(buf[1],0).save(buf[2],1).save(buf[3],2);
   }
   
   for ( MySensorDevice * d : mySensorDevices) {

@@ -12,11 +12,11 @@ enum class DEVICE {
   RelayButton1 = 7,
   RelayButton2 = 8,
   Shutter = 9,
-  PowerSensor = 10,
-  InternTemp = 11,
-  ExternTempDS = 12,
-  ExternTempDHT = 13,
-  ExternTempSHT = 14
+  PowerSensor = 10, //: 
+  InternTemp = 11,  //;
+  ExternTempDS = 12, //<
+  ExternTempDHT = 13, //=
+  ExternTempSHT = 14  //>
 };
 
 /*  *******************************************************************************************
