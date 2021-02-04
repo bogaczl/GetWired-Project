@@ -16,8 +16,8 @@ class Button {
     enum class State { IDLE, CLICKED, DOUBLE_CLICKED, LONG_PRESSED };
     State state = State::IDLE;
     const uint8_t sensorPin;    
-    void serveClick();
     volatile bool interrupt = false;
+    void serveClick();
   public:
     void interruptChange();
     Button(const uint8_t sensorPin);

@@ -44,29 +44,29 @@ void Button::interruptChange() {
 }
 
 void Button::serveClick() {
-  interrupt = false;
-  if (millis() - previousClickTime < 1000) {
+  if (millis() - previousClickTime < 500) {
     state = State::DOUBLE_CLICKED;
     previousClickTime = 0;
-    return;
   }
-  previousClickTime = millis();
-  state = State::CLICKED;
+  else {
+    state = State::CLICKED;
+    previousClickTime = millis();
+  }
+  interrupt = false;
 }
 
 
 void Button::checkInput() {
- //LOW <=> pressed 
- if (digitalRead(sensorPin) != LOW) {
+  //LOW <=> pressed 
+  if (digitalRead(sensorPin) != LOW) {
     if (state == State::LONG_PRESSED) {
       state = State::IDLE;
-      interrupt = false;
     }
     else if ( interrupt ) {
       serveClick();
     }
     return;
- }
+  }
   
   if (state == State::LONG_PRESSED) {
     return;
