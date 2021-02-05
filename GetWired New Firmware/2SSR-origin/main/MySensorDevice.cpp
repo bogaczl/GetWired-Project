@@ -103,7 +103,7 @@ void MySensorButton::updateDevice() {
   uint8_t state = button->getShortState();
   if (state) {
     send(msgShort->set("1"));
-    delay(50);
+    delay(100);
     send(msgShort->set("0"));
   }
   state = button->getLongState();
@@ -114,7 +114,7 @@ void MySensorButton::updateDevice() {
   state = button->getDoubleState();
   if (state) {
     send(msgDouble->set("1"));
-    delay(50);
+    delay(100);
     send(msgDouble->set("0"));
   }  
 }
@@ -177,6 +177,12 @@ void MySensorRelayButton::updateDevice() {
   if (previousLongState != state) {
     send(msgLong->setSensor(sensorId+1).set(state));
     previousLongState = state;
+  }
+  state = button->getDoubleState();
+  if (state) {
+    send(msgDouble->set("1"));
+    delay(100);
+    send(msgDouble->set("0"));
   }
 }
 
@@ -258,7 +264,7 @@ void MySensorInternalTemperature::initDevice() {
 void MySensorInternalTemperature::updateDevice() {
   
   if (millis() > lastUpdate + INTERVAL)  {
-    send(msg->set((int)sensor->measureT()));
+    send(msg->set(sensor->measureT(),1));
     lastUpdate = millis();
   
     if (sensor->isOverheat()) {
